@@ -161,19 +161,6 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
     }
 
     @ReactMethod
-    public void getUserInputSteps(double startDate,
-                                double endDate,
-                                Callback errorCallback,
-                                Callback successCallback) {
-
-        try {
-            mGoogleFitManager.getStepHistory().getUserInputSteps((long) startDate, (long) endDate, successCallback);
-        } catch (IllegalViewOperationException e) {
-            errorCallback.invoke(e.getMessage());
-        }
-    }
-
-    @ReactMethod
     public void getDailyDistanceSamples(double startDate,
                                         double endDate,
                                         Callback errorCallback,
@@ -251,18 +238,6 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
                          Callback successCallback) {
         try {
             successCallback.invoke(mGoogleFitManager.getCalorieHistory().saveFood(foodSample));
-        } catch (IllegalViewOperationException e) {
-            errorCallback.invoke(e.getMessage());
-        }
-    }
-
-    @ReactMethod
-    public void getDailyNutritionSamples(double startDate,
-                                         double endDate,
-                                         Callback errorCallback,
-                                         Callback successCallback) {
-        try {
-            successCallback.invoke(mGoogleFitManager.getNutritionHistory().aggregateDataByDate((long) startDate, (long) endDate));
         } catch (IllegalViewOperationException e) {
             errorCallback.invoke(e.getMessage());
         }
@@ -353,9 +328,9 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
 
     @ReactMethod
     public void getBloodPressureSamples(double startDate,
-                                        double endDate,
-                                        Callback errorCallback,
-                                        Callback successCallback) {
+                                 double endDate,
+                                 Callback errorCallback,
+                                 Callback successCallback) {
         try {
             HeartrateHistory heartrateHistory = mGoogleFitManager.getHeartrateHistory();
             heartrateHistory.setDataType(HealthDataTypes.TYPE_BLOOD_PRESSURE);
@@ -367,9 +342,9 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
 
     @ReactMethod
     public void getHeartRateSamples(double startDate,
-                                    double endDate,
-                                    Callback errorCallback,
-                                    Callback successCallback) {
+                                 double endDate,
+                                 Callback errorCallback,
+                                 Callback successCallback) {
 
         try {
             HeartrateHistory heartrateHistory = mGoogleFitManager.getHeartrateHistory();
