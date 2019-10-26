@@ -46,7 +46,7 @@ public class HeartrateHistory {
     private DataSet Dataset;
     private DataType dataType;
 
-    private static final String TAG = "Weights History";
+    private static final String TAG = "Heart Rate History";
 
     public HeartrateHistory(ReactContext reactContext, GoogleFitManager googleFitManager, DataType dataType){
         this.mReactContext = reactContext;
@@ -55,7 +55,7 @@ public class HeartrateHistory {
     }
 
     public HeartrateHistory(ReactContext reactContext, GoogleFitManager googleFitManager){
-        this(reactContext, googleFitManager, DataType.TYPE_WEIGHT);
+        this(reactContext, googleFitManager, DataType.TYPE_HEART_RATE_BPM);
     }
 
     public void setDataType(DataType dataType) {
@@ -64,18 +64,13 @@ public class HeartrateHistory {
 
     public ReadableArray getHistory(long startTime, long endTime) {
         DateFormat dateFormat = DateFormat.getDateInstance();
-        // for height we need to take time, since GoogleFit foundation - https://stackoverflow.com/questions/28482176/read-the-height-in-googlefit-in-android
 
-        DataReadRequest.Builder readRequestBuilder = new DataReadRequest.Builder()
-                .read(this.dataType)
-                .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS);
-        if (this.dataType == HealthDataTypes.TYPE_BLOOD_PRESSURE) {
-            readRequestBuilder.bucketByTime(1, TimeUnit.DAYS);
-        } else {
-            readRequestBuilder.setLimit(5); // need only one height, since it's unchangable
-        }
-
-        DataReadRequest readRequest = readRequestBuilder.build();
+        DataReadRequest readRequest = new DataReadRequest.Builder()
+                .aggregate(DataType.TYPE_HEART_RATE_BPM, DataType.AGGREGATE_HEART_RATE_SUMMARY)
+                .bucketByTime(1, TimeUnit.DAYS)
+                .enableServerQueries()
+                .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
+                .build();
 
         DataReadResult dataReadResult = Fitness.HistoryApi.readData(googleFitManager.getGoogleApiClient(), readRequest).await(1, TimeUnit.MINUTES);
 
@@ -99,96 +94,96 @@ public class HeartrateHistory {
         return map;
     }
 
-    public boolean save(ReadableMap sample) {
-        this.Dataset = createDataForRequest(
-                this.dataType,    // for height, it would be DataType.TYPE_HEIGHT
-                DataSource.TYPE_RAW,
-                sample.getDouble("value"),                  // weight in kgs, height in metrs
-                (long)sample.getDouble("date"),              // start time
-                (long)sample.getDouble("date"),                // end time
-                TimeUnit.MILLISECONDS                // Time Unit, for example, TimeUnit.MILLISECONDS
-        );
-        new InsertAndVerifyDataTask(this.Dataset).execute();
-
-        return true;
-    }
-
-    public boolean delete(ReadableMap sample) {
-        long endTime = (long) sample.getDouble("endTime");
-        long startTime = (long) sample.getDouble("startTime");
-        new DeleteDataTask(startTime, endTime, this.dataType).execute();
-        return true;
-    }
-
-    //Async fit data delete
-    private class DeleteDataTask extends AsyncTask<Void, Void, Void> {
-
-        long startTime;
-        long endTime;
-        DataType dataType;
-
-        DeleteDataTask(long startTime, long endTime, DataType dataType) {
-            this.startTime = startTime;
-            this.endTime = endTime;
-        }
-
-        @Override
-        protected Void doInBackground(Void... params) {
-
-            DataDeleteRequest request = new DataDeleteRequest.Builder()
-                    .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
-                    .addDataType(this.dataType)
-                    .build();
-
-            com.google.android.gms.common.api.Status insertStatus =
-                    Fitness.HistoryApi.deleteData(googleFitManager.getGoogleApiClient(), request)
-                            .await(1, TimeUnit.MINUTES);
-
-            if (insertStatus.isSuccess()) {
-                Log.w("myLog", "+Successfully deleted data.");
-            } else {
-                Log.w("myLog", "+Failed to delete data.");
-            }
-
-            return null;
-        }
-    }
-
-
-    //Async fit data insert
-    private class InsertAndVerifyDataTask extends AsyncTask<Void, Void, Void> {
-
-        private DataSet Dataset;
-
-        InsertAndVerifyDataTask(DataSet dataset) {
-            this.Dataset = dataset;
-        }
-
-        protected Void doInBackground(Void... params) {
-            // Create a new dataset and insertion request.
-            DataSet dataSet = this.Dataset;
-
-            // [START insert_dataset]
-            // Then, invoke the History API to insert the data and await the result, which is
-            // possible here because of the {@link AsyncTask}. Always include a timeout when calling
-            // await() to prevent hanging that can occur from the service being shutdown because
-            // of low memory or other conditions.
-            //Log.i(TAG, "Inserting the dataset in the History API.");
-            com.google.android.gms.common.api.Status insertStatus =
-                    Fitness.HistoryApi.insertData(googleFitManager.getGoogleApiClient(), dataSet)
-                            .await(1, TimeUnit.MINUTES);
-
-            // Before querying the data, check to see if the insertion succeeded.
-            if (!insertStatus.isSuccess()) {
-                //Log.i(TAG, "There was a problem inserting the dataset.");
-                return null;
-            }
-
-            //Log.i(TAG, "Data insert was successful!");
-
-            return null;
-        }
-    }
+//    public boolean save(ReadableMap sample) {
+//        this.Dataset = createDataForRequest(
+//                this.dataType,    // for height, it would be DataType.TYPE_HEIGHT
+//                DataSource.TYPE_RAW,
+//                sample.getDouble("value"),                  // weight in kgs, height in metrs
+//                (long)sample.getDouble("date"),              // start time
+//                (long)sample.getDouble("date"),                // end time
+//                TimeUnit.MILLISECONDS                // Time Unit, for example, TimeUnit.MILLISECONDS
+//        );
+//        new InsertAndVerifyDataTask(this.Dataset).execute();
+//
+//        return true;
+//    }
+//
+//    public boolean delete(ReadableMap sample) {
+//        long endTime = (long) sample.getDouble("endTime");
+//        long startTime = (long) sample.getDouble("startTime");
+//        new DeleteDataTask(startTime, endTime, this.dataType).execute();
+//        return true;
+//    }
+//
+//    //Async fit data delete
+//    private class DeleteDataTask extends AsyncTask<Void, Void, Void> {
+//
+//        long startTime;
+//        long endTime;
+//        DataType dataType;
+//
+//        DeleteDataTask(long startTime, long endTime, DataType dataType) {
+//            this.startTime = startTime;
+//            this.endTime = endTime;
+//        }
+//
+//        @Override
+//        protected Void doInBackground(Void... params) {
+//
+//            DataDeleteRequest request = new DataDeleteRequest.Builder()
+//                    .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
+//                    .addDataType(this.dataType)
+//                    .build();
+//
+//            com.google.android.gms.common.api.Status insertStatus =
+//                    Fitness.HistoryApi.deleteData(googleFitManager.getGoogleApiClient(), request)
+//                            .await(1, TimeUnit.MINUTES);
+//
+//            if (insertStatus.isSuccess()) {
+//                Log.w("myLog", "+Successfully deleted data.");
+//            } else {
+//                Log.w("myLog", "+Failed to delete data.");
+//            }
+//
+//            return null;
+//        }
+//    }
+//
+//
+//    //Async fit data insert
+//    private class InsertAndVerifyDataTask extends AsyncTask<Void, Void, Void> {
+//
+//        private DataSet Dataset;
+//
+//        InsertAndVerifyDataTask(DataSet dataset) {
+//            this.Dataset = dataset;
+//        }
+//
+//        protected Void doInBackground(Void... params) {
+//            // Create a new dataset and insertion request.
+//            DataSet dataSet = this.Dataset;
+//
+//            // [START insert_dataset]
+//            // Then, invoke the History API to insert the data and await the result, which is
+//            // possible here because of the {@link AsyncTask}. Always include a timeout when calling
+//            // await() to prevent hanging that can occur from the service being shutdown because
+//            // of low memory or other conditions.
+//            //Log.i(TAG, "Inserting the dataset in the History API.");
+//            com.google.android.gms.common.api.Status insertStatus =
+//                    Fitness.HistoryApi.insertData(googleFitManager.getGoogleApiClient(), dataSet)
+//                            .await(1, TimeUnit.MINUTES);
+//
+//            // Before querying the data, check to see if the insertion succeeded.
+//            if (!insertStatus.isSuccess()) {
+//                //Log.i(TAG, "There was a problem inserting the dataset.");
+//                return null;
+//            }
+//
+//            //Log.i(TAG, "Data insert was successful!");
+//
+//            return null;
+//        }
+//    }
 
     /**
      * This method creates a dataset object to be able to insert data in google fit
@@ -236,12 +231,7 @@ public class HeartrateHistory {
                 stepMap.putString("day", day);
                 stepMap.putDouble("startDate", dp.getStartTime(TimeUnit.MILLISECONDS));
                 stepMap.putDouble("endDate", dp.getEndTime(TimeUnit.MILLISECONDS));
-                if (this.dataType == HealthDataTypes.TYPE_BLOOD_PRESSURE) {
-                    stepMap.putDouble("value2", dp.getValue(HealthFields.FIELD_BLOOD_PRESSURE_DIASTOLIC).asFloat());
-                    stepMap.putDouble("value", dp.getValue(HealthFields.FIELD_BLOOD_PRESSURE_SYSTOLIC).asFloat());
-                } else {
-                  stepMap.putDouble("value", dp.getValue(field).asFloat());
-                }
+                stepMap.putDouble("value", dp.getValue(field).asFloat());
 
 
                 map.pushMap(stepMap);
