@@ -403,7 +403,7 @@ class RNGoogleFit {
       },
       (res) => {
         if (res.length > 0) {
-          callback(false, prepareResponse(res, 'value'))
+          callback(false, res)
         } else {
           callback('There is no any heart rate data for this period', false)
         }

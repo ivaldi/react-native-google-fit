@@ -122,21 +122,23 @@ public class SleepHistory {
     private static void processDataSet(DataSet dataSet, WritableArray map) {
         //Log.i(TAG, "Data returned for Data type: " + dataSet.getDataType().getName());
         DateFormat dateFormat = getTimeInstance();
+        DateFormat dateAndTimeFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
         float sleepHours = 0;
         WritableMap sleepMap = Arguments.createMap();
 
         for (DataPoint dp : dataSet.getDataPoints()) {
-            Log.i(TAG, "App Package Name:" + dp.getOriginalDataSource().getAppPackageName().toString());
-            Log.i(TAG, "Data point:");
-            Log.i(TAG, "\tType: " + dp.getDataType().getName());
-            Log.i(TAG, "\tStart: " + dateFormat.format(dp.getStartTime(TimeUnit.MILLISECONDS)));
-            Log.i(TAG, "\tEnd: " + dateFormat.format(dp.getEndTime(TimeUnit.MILLISECONDS)));
-
             Format formatter = new SimpleDateFormat("EEE");
             String day = formatter.format(new Date(dp.getStartTime(TimeUnit.MILLISECONDS)));
 
             for(Field field : dp.getDataType().getFields()) {
-                if(dp.getOriginalDataSource().getAppPackageName().toString().contains("sleep") && field.getName().contains("duration")){
+                if(dp.getOriginalDataSource().getAppPackageName() != null && dp.getOriginalDataSource().getAppPackageName().toString().contains("sleep") && field.getName().contains("duration")){
+                    Log.i(TAG, "App Package Name:" + dp.getOriginalDataSource().getAppPackageName().toString());
+                    Log.i(TAG, "Data point:");
+                    Log.i(TAG, "\tType: " + dp.getDataType().getName());
+                    Log.i(TAG, "\tDate: " +  dateAndTimeFormat.format(dp.getStartTime(TimeUnit.MILLISECONDS)) + " to " + dateAndTimeFormat.format(dp.getEndTime(TimeUnit.MILLISECONDS)));
+                    Log.i(TAG, "\tStart: " + dateFormat.format(dp.getStartTime(TimeUnit.MILLISECONDS)));
+                    Log.i(TAG, "\tEnd: " + dateFormat.format(dp.getEndTime(TimeUnit.MILLISECONDS)));
+
                     Value value = dp.getValue(field);
                     sleepHours  = (float) (Math.round((value.asInt() * 2.778 * 0.0000001*10.0))/10.0);
                     Log.i(TAG, "\tField: Sleep duration in h " + sleepHours);
@@ -146,9 +148,6 @@ public class SleepHistory {
                     sleepMap.putDouble("sleep", sleepHours);
                     map.pushMap(sleepMap);
                 }
-                Log.i(TAG, "\t\tField: " + field.getName() +
-                        " Value: " + dp.getValue(field));
-
             }
         }
     }
