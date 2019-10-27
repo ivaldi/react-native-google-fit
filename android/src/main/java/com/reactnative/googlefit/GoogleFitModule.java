@@ -161,6 +161,19 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
     }
 
     @ReactMethod
+    public void getSleepSamples(double startDate,
+                                   double endDate,
+                                   Callback errorCallback,
+                                   Callback successCallback) {
+
+        try {
+            mGoogleFitManager.getSleepHistory().aggregateDataByDate((long) startDate, (long) endDate, successCallback);
+        } catch (IllegalViewOperationException e) {
+            errorCallback.invoke(e.getMessage());
+        }
+    }
+
+    @ReactMethod
     public void getDailyDistanceSamples(double startDate,
                                         double endDate,
                                         Callback errorCallback,
