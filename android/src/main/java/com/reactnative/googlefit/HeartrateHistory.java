@@ -70,7 +70,7 @@ public class HeartrateHistory {
 
         DataReadRequest readRequest = new DataReadRequest.Builder()
                 .aggregate(DataType.TYPE_HEART_RATE_BPM, DataType.AGGREGATE_HEART_RATE_SUMMARY)
-                .bucketByTime(1, TimeUnit.DAYS)
+                .bucketByTime(1, TimeUnit.HOURS)
                 .enableServerQueries()
                 .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
                 .build();
