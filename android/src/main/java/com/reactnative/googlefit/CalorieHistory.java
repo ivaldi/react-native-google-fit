@@ -58,9 +58,7 @@ public class CalorieHistory {
     public ReadableArray aggregateDataByDate(long startTime, long endTime, boolean basalCalculation) {
 
         DateFormat dateFormat = DateFormat.getDateInstance();
-        Log.i(TAG, "Range Start: " + dateFormat.format(startTime));
-        Log.i(TAG, "Range End: " + dateFormat.format(endTime));
-
+    
         //Check how much calories were expended in specific days.
         DataReadRequest readRequest = new DataReadRequest.Builder()
                 .aggregate(DataType.TYPE_CALORIES_EXPENDED, DataType.AGGREGATE_CALORIES_EXPENDED)
@@ -75,7 +73,6 @@ public class CalorieHistory {
 
         //Used for aggregated data
         if (dataReadResult.getBuckets().size() > 0) {
-            Log.i(TAG, "Number of buckets: " + dataReadResult.getBuckets().size());
             for (Bucket bucket : dataReadResult.getBuckets()) {
                 List<DataSet> dataSets = bucket.getDataSets();
                 for (DataSet dataSet : dataSets) {
@@ -85,7 +82,6 @@ public class CalorieHistory {
         }
         //Used for non-aggregated data
         else if (dataReadResult.getDataSets().size() > 0) {
-            Log.i(TAG, "Number of returned DataSets: " + dataReadResult.getDataSets().size());
             for (DataSet dataSet : dataReadResult.getDataSets()) {
                 processDataSet(dataSet, map, basalCalculation);
             }
@@ -141,18 +137,11 @@ public class CalorieHistory {
 
 
         for (DataPoint dp : dataSet.getDataPoints()) {
-            Log.i(TAG, "Data point:");
-            Log.i(TAG, "\tType: " + dp.getDataType().getName());
-            Log.i(TAG, "\tStart: " + dateFormat.format(dp.getStartTime(TimeUnit.MILLISECONDS)) + " " + timeFormat.format(dp.getStartTime(TimeUnit.MILLISECONDS)));
-            Log.i(TAG, "\tEnd: " + dateFormat.format(dp.getEndTime(TimeUnit.MILLISECONDS)) + " " + timeFormat.format(dp.getStartTime(TimeUnit.MILLISECONDS)));
-
+           
             String day = formatter.format(new Date(dp.getStartTime(TimeUnit.MILLISECONDS)));
-            Log.i(TAG, "Day: " + day);
-
+           
             for (Field field : dp.getDataType().getFields()) {
-                Log.i("History", "\tField: " + field.getName() +
-                        " Value: " + dp.getValue(field));
-
+           
                 stepMap.putString("day", day);
                 stepMap.putDouble("startDate", dp.getStartTime(TimeUnit.MILLISECONDS));
                 stepMap.putDouble("endDate", dp.getEndTime(TimeUnit.MILLISECONDS));

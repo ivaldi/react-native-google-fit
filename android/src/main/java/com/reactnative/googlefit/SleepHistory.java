@@ -67,9 +67,6 @@ public class SleepHistory {
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
         dateFormat.setTimeZone(TimeZone.getDefault());
         final WritableArray results = Arguments.createArray();
-        Log.i(TAG, "Range Start: " + dateFormat.format(startTime));
-        Log.i(TAG, "Range End: " + dateFormat.format(endTime));
-        Log.i(TAG, "Result for sleep:");
         DataReadRequest readRequest = new DataReadRequest.Builder()
                 // The data request can specify multiple data types to return, effectively
                 // combining multiple data queries into one call.
@@ -95,8 +92,6 @@ public class SleepHistory {
         WritableArray sleeps = Arguments.createArray();
 
         if (dataReadResult.getBuckets().size() > 0) {
-            Log.i(TAG, "Number of returned buckets of DataSets is: "
-                    + dataReadResult.getBuckets().size());
             for (Bucket bucket : dataReadResult.getBuckets()) {
                 List<DataSet> dataSets = bucket.getDataSets();
                 for (DataSet dataSet : dataSets) {
@@ -104,8 +99,6 @@ public class SleepHistory {
                 }
             }
         } else if (dataReadResult.getDataSets().size() > 0) {
-            Log.i(TAG, "Number of returned DataSets is: "
-                    + dataReadResult.getDataSets().size());
             for (DataSet dataSet : dataReadResult.getDataSets()) {
                 processDataSet(dataSet, sleeps);
             }
@@ -132,16 +125,10 @@ public class SleepHistory {
 
             for(Field field : dp.getDataType().getFields()) {
                 if(dp.getOriginalDataSource().getAppPackageName() != null && dp.getOriginalDataSource().getAppPackageName().toString().contains("sleep") && field.getName().contains("duration")){
-                    Log.i(TAG, "App Package Name:" + dp.getOriginalDataSource().getAppPackageName().toString());
-                    Log.i(TAG, "Data point:");
-                    Log.i(TAG, "\tType: " + dp.getDataType().getName());
-                    Log.i(TAG, "\tDate: " +  dateAndTimeFormat.format(dp.getStartTime(TimeUnit.MILLISECONDS)) + " to " + dateAndTimeFormat.format(dp.getEndTime(TimeUnit.MILLISECONDS)));
-                    Log.i(TAG, "\tStart: " + dateFormat.format(dp.getStartTime(TimeUnit.MILLISECONDS)));
-                    Log.i(TAG, "\tEnd: " + dateFormat.format(dp.getEndTime(TimeUnit.MILLISECONDS)));
-
+                    
                     Value value = dp.getValue(field);
                     sleepHours  = (float) (Math.round((value.asInt() * 2.778 * 0.0000001*10.0))/10.0);
-                    Log.i(TAG, "\tField: Sleep duration in h " + sleepHours);
+                    
                     sleepMap.putString("day", day);
                     sleepMap.putDouble("startDate", dp.getStartTime(TimeUnit.MILLISECONDS));
                     sleepMap.putDouble("endDate", dp.getEndTime(TimeUnit.MILLISECONDS));

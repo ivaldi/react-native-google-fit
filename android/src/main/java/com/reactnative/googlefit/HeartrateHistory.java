@@ -64,9 +64,6 @@ public class HeartrateHistory {
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
         dateFormat.setTimeZone(TimeZone.getDefault());
         final WritableArray results = Arguments.createArray();
-        Log.i(TAG, "Range Start: " + dateFormat.format(startTime));
-        Log.i(TAG, "Range End: " + dateFormat.format(endTime));
-        Log.i(TAG, "Result for Heart Rate:");
 
         DataReadRequest readRequest = new DataReadRequest.Builder()
                 .aggregate(DataType.TYPE_HEART_RATE_BPM, DataType.AGGREGATE_HEART_RATE_SUMMARY)
@@ -82,8 +79,6 @@ public class HeartrateHistory {
         WritableArray heartRates = Arguments.createArray();
 
         if (dataReadResult.getBuckets().size() > 0) {
-            Log.i(TAG, "Number of returned buckets of DataSets is: "
-                    + dataReadResult.getBuckets().size());
             for (Bucket bucket : dataReadResult.getBuckets()) {
                 List<DataSet> dataSets = bucket.getDataSets();
                 for (DataSet dataSet : dataSets) {
@@ -91,8 +86,6 @@ public class HeartrateHistory {
                 }
             }
         } else if (dataReadResult.getDataSets().size() > 0) {
-            Log.i(TAG, "Number of returned DataSets is: "
-                    + dataReadResult.getDataSets().size());
             for (DataSet dataSet : dataReadResult.getDataSets()) {
                 processDataSet(dataSet, heartRates);
             }
@@ -118,15 +111,7 @@ public class HeartrateHistory {
             String day = formatter.format(new Date(dp.getStartTime(TimeUnit.MILLISECONDS)));
             WritableMap heartRateMap = Arguments.createMap();
             for(Field field : dp.getDataType().getFields()) {
-                Log.i(TAG, "App Package Name:" + dp.getDataSource().getAppPackageName().toString());
-                Log.i(TAG, "Data point:");
-                Log.i(TAG, "\tType: " + dp.getDataType().getName());
-                Log.i(TAG, "\tDate: " +  dateAndTimeFormat.format(dp.getStartTime(TimeUnit.MILLISECONDS)) + " to " + dateAndTimeFormat.format(dp.getEndTime(TimeUnit.MILLISECONDS)));
-                Log.i(TAG, "\tStart: " + dateFormat.format(dp.getStartTime(TimeUnit.MILLISECONDS)));
-                Log.i(TAG, "\tEnd: " + dateFormat.format(dp.getEndTime(TimeUnit.MILLISECONDS)));
-                Log.i(TAG, "\tField: " + field.getName() +
-                        " Value: " + dp.getValue(field));
-
+              
                 heartRateMap.putString("day", day);
                 heartRateMap.putDouble("startDate", dp.getStartTime(TimeUnit.MILLISECONDS));
                 heartRateMap.putDouble("endDate", dp.getEndTime(TimeUnit.MILLISECONDS));
