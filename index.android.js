@@ -14,16 +14,20 @@ class RNGoogleFit {
   authorize = async (options = {}) => {
     const successResponse = { success: true }
     try {
-      await this.checkIsAuthorized()
-      if (this.isAuthorized && options.force != true) {
-        return successResponse
+      if (options.force != true) {
+        await this.checkIsAuthorized()
+        if (this.isAuthorized) {
+          return successResponse
+        }
       }
       const authResult = await new Promise((resolve, reject) => {
         this.onAuthorize(() => {
+          console.log('authorized!');
           this.isAuthorized = true
           resolve(successResponse)
         })
         this.onAuthorizeFailure((error) => {
+          console.log('not authorized!');
           this.isAuthorized = false
           reject({ success: false, message: error.message })
         })
@@ -34,6 +38,7 @@ class RNGoogleFit {
           Scopes.FITNESS_LOCATION_READ,
         ]
 
+        console.log('authorize Gfit!!');
         googleFit.authorize({
           scopes: (options && options.scopes) || defaultScopes,
         })

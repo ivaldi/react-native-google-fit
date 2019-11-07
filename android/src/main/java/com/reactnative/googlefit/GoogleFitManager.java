@@ -124,6 +124,7 @@ public class GoogleFitManager implements
     public CalorieHistory getCalorieHistory() { return calorieHistory; }
 
     public void authorize(ArrayList<String> userScopes) {
+        Log.i(TAG, "Authorization - Native!!");
         final ReactContext mReactContext = this.mReactContext;
 
         GoogleApiClient.Builder apiClientBuilder = new GoogleApiClient.Builder(mReactContext.getApplicationContext())
@@ -180,8 +181,15 @@ public class GoogleFitManager implements
                     }
                 )
                 .build();
-
-        mApiClient.connect();
+        if(mApiClient.isConnected()){
+            Log.i(TAG, "ReConnect");
+            mApiClient.clearDefaultAccountAndReconnect();
+        }else{
+            Log.i(TAG, "Connect");
+            mApiClient.connect();
+        }
+        
+        
     }
 
     public void  disconnect() {
