@@ -15,7 +15,7 @@ class RNGoogleFit {
     const successResponse = { success: true }
     try {
       await this.checkIsAuthorized()
-      if (this.isAuthorized) {
+      if (this.isAuthorized && options.force != true) {
         return successResponse
       }
       const authResult = await new Promise((resolve, reject) => {
