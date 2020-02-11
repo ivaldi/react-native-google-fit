@@ -201,7 +201,7 @@ public class StepHistory {
                         for (Bucket bucket : dataReadResult.getBuckets()) {
                             List<DataSet> dataSets = bucket.getDataSets();
                             for (DataSet dataSet : dataSets) {
-                                processDataSet(dataSet, steps);
+                                processDataSet(dataSet, steps, source);
                             }
                         }
                     }
@@ -210,7 +210,7 @@ public class StepHistory {
                     if (dataReadResult.getDataSets().size() > 0) {
                         Log.i(TAG, "  +++ Number of returned DataSets: " + dataReadResult.getDataSets().size());
                         for (DataSet dataSet : dataReadResult.getDataSets()) {
-                            processDataSet(dataSet, steps);
+                            processDataSet(dataSet, steps, source);
                         }
                     }
 
@@ -250,7 +250,7 @@ public class StepHistory {
             for (Bucket bucket : dataReadResult.getBuckets()) {
                 List<DataSet> dataSets = bucket.getDataSets();
                 for (DataSet dataSet : dataSets) {
-                    processDataSet(dataSet, map);
+                    processDataSet(dataSet, map, null);
                 }
             }
         }
@@ -258,15 +258,16 @@ public class StepHistory {
         else if (dataReadResult.getDataSets().size() > 0) {
             Log.i(TAG, "Number of returned DataSets: " + dataReadResult.getDataSets().size());
             for (DataSet dataSet : dataReadResult.getDataSets()) {
-                processDataSet(dataSet, map);
+                processDataSet(dataSet, map, null);
             }
         }
 
         sendEvent(this.mReactContext, "StepHistoryChangedEvent", map);
     }
 
-    private void processDataSet(DataSet dataSet, WritableArray map) {
-        //Log.i(TAG, "Data returned for Data type: " + dataSet.getDataType().getName());
+    private void processDataSet(DataSet dataSet, WritableArray map, WritableMap source) {
+        Log.i(TAG, "Data returned for Data type: " + dataSet.getDataType().getName());
+        
 
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
         dateFormat.setTimeZone(TimeZone.getDefault());
@@ -274,12 +275,21 @@ public class StepHistory {
         WritableMap stepMap = Arguments.createMap();
 
         for (DataPoint dp : dataSet.getDataPoints()) {
+            Log.i(TAG, "Stream ID: " + dp.getOriginalDataSource().getStreamIdentifier());
+            Log.i(TAG, "Stream Name: " + source.getString("stream"));
        
             for(Field field : dp.getDataType().getFields()) {
-       
+    
                 stepMap.putDouble("startDate", dp.getStartTime(TimeUnit.MILLISECONDS));
                 stepMap.putDouble("endDate", dp.getEndTime(TimeUnit.MILLISECONDS));
                 stepMap.putDouble("steps", dp.getValue(field).asInt());
+
+                int manual_steps = 0;
+                if(dp.getOriginalDataSource().getStreamIdentifier().contains("user_input")){
+                    manual_steps = dp.getValue(field).asInt();
+                }
+                stepMap.putDouble("manual_steps", manual_steps);
+
                 map.pushMap(stepMap);
             }
         }

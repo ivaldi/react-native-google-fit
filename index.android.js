@@ -108,6 +108,7 @@ class RNGoogleFit {
             const obj = {}
             obj.source = dev.source.appPackage + ((dev.source.stream) ? ':' + dev.source.stream : '')
             obj.steps = buildDailySteps(dev.steps)
+            obj.manual_steps = buildDailySteps(dev.steps, true)
             return obj
           }, this))
         } else {
@@ -130,6 +131,10 @@ class RNGoogleFit {
       return new Promise((resolve, reject) => {
         this._retrieveDailyStepCountSamples(startDate, endDate, (error, result) => {
           if (!error) {
+            // const old_gfit = result.find(k => k.source == 'com.google.android.gms:merge_step_deltas').steps;
+            // const new_gfit = result.find(k => k.source == 'com.google.android.gms:estimated_steps').steps;
+            // alert(JSON.stringify(result))
+            // alert("Old Google Fit: " + old_gfit + "\n\n New Google Fit: " + new_gfit);
             resolve(result)
           } else {
             reject(error)
