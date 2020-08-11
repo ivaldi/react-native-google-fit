@@ -134,11 +134,11 @@ public class StepHistory {
                 source.putNull("appPackage");
             }
 
-            if (dataSource.getName() != null) {
-                source.putString("name", dataSource.getName());
-            } else {
-                source.putNull("name");
-            }
+//            if (dataSource.getStreamName() != null) {
+//                source.putString("name", dataSource.getStreamName());
+//            } else {
+//                source.putNull("name");
+//            }
 
             if (dataSource.getStreamName() != null) {
                 source.putString("stream", dataSource.getStreamName());

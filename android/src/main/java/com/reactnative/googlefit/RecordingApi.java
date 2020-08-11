@@ -52,8 +52,8 @@ public class RecordingApi {
                 return DataType.TYPE_STEP_COUNT_CUMULATIVE;
             case "distance":
                 return DataType.TYPE_DISTANCE_DELTA;
-            case "activity":
-                return DataType.TYPE_ACTIVITY_SAMPLES;
+//            case "activity":
+//                return DataType.TYPE_ACTIVITY_SAMPLES;
             default:
                 Log.v(TAG, "Unknown data type " + dataTypeName);
                 return null;
