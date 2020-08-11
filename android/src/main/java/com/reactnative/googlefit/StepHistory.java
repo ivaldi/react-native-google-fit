@@ -134,8 +134,8 @@ public class StepHistory {
                 source.putNull("appPackage");
             }
 
-//            if (dataSource.getStreamName() != null) {
-//                source.putString("name", dataSource.getStreamName());
+//            if (dataSource.getName() != null) {
+//                source.putString("name", dataSource.getName());
 //            } else {
 //                source.putNull("name");
 //            }
@@ -267,7 +267,7 @@ public class StepHistory {
 
     private void processDataSet(DataSet dataSet, WritableArray map, WritableMap source) {
         Log.i(TAG, "Data returned for Data type: " + dataSet.getDataType().getName());
-        
+
 
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
         dateFormat.setTimeZone(TimeZone.getDefault());
@@ -277,9 +277,9 @@ public class StepHistory {
         for (DataPoint dp : dataSet.getDataPoints()) {
             Log.i(TAG, "Stream ID: " + dp.getOriginalDataSource().getStreamIdentifier());
             Log.i(TAG, "Stream Name: " + source.getString("stream"));
-       
+
             for(Field field : dp.getDataType().getFields()) {
-    
+
                 stepMap.putDouble("startDate", dp.getStartTime(TimeUnit.MILLISECONDS));
                 stepMap.putDouble("endDate", dp.getEndTime(TimeUnit.MILLISECONDS));
                 stepMap.putDouble("steps", dp.getValue(field).asInt());
