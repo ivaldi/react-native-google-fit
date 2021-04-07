@@ -34,8 +34,8 @@ class RNGoogleFit {
 
         const defaultScopes = [
           Scopes.FITNESS_ACTIVITY_READ,
-          Scopes.FITNESS_BODY_READ_WRITE,
-          Scopes.FITNESS_LOCATION_READ,
+          Scopes.FITNESS_BODY_READ,
+          Scopes.FITNESS_LOCATION_READ
         ]
 
         console.log('authorize Gfit!!');

@@ -10,6 +10,7 @@ import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptionsExtension;
 import com.google.android.gms.common.Scopes;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
@@ -17,6 +18,7 @@ import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Scope;
 import com.google.android.gms.fitness.Fitness;
 import com.google.android.gms.fitness.FitnessActivities;
+import com.google.android.gms.fitness.FitnessOptions;
 import com.google.android.gms.fitness.data.Bucket;
 import com.google.android.gms.fitness.data.DataPoint;
 import com.google.android.gms.fitness.data.DataSet;
@@ -43,6 +45,7 @@ import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import androidx.annotation.NonNull;
 
@@ -62,81 +65,109 @@ public class SleepHistory {
         this.googleFitManager = googleFitManager;
     }
 
-    public void aggregateDataByDate(long startTime, long endTime, final Callback successCallback) {
+    public void aggregateDataByDate(long startDate, long endDate, final Callback successCallback) {
 
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
         dateFormat.setTimeZone(TimeZone.getDefault());
-        final WritableArray results = Arguments.createArray();
-        DataReadRequest readRequest = new DataReadRequest.Builder()
-                // The data request can specify multiple data types to return, effectively
-                // combining multiple data queries into one call.
-                // In this example, it's very unlikely that the request is for several hundred
-                // datapoints each consisting of a few steps and a timestamp.  The more likely
-                // scenario is wanting to see how many steps were walked per day, for 7 days.
-                .aggregate(DataType.TYPE_ACTIVITY_SEGMENT, DataType.AGGREGATE_ACTIVITY_SUMMARY)
-                // Analogous to a "Group By" in SQL, defines how data should be aggregated.
-                // bucketByTime allows for a time span, whereas bucketBySession would allow
-                // bucketing by "sessions", which would need to be defined in code.
-                .bucketByTime(1, TimeUnit.DAYS)
-                .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
+
+        SessionReadRequest request = new SessionReadRequest.Builder()
+                .readSessionsFromAllApps()
+                .includeSleepSessions()
+                .read(DataType.TYPE_SLEEP_SEGMENT)
+                .setTimeInterval((long) startDate, (long) endDate, TimeUnit.MILLISECONDS)
                 .build();
 
-        // [START read_dataset]
-        // Invoke the History API to fetch the data with the query and await the result of
-        // the read request.
-        DataReadResult dataReadResult =
-                Fitness.HistoryApi.readData(this.googleFitManager.getGoogleApiClient(), readRequest).await(1, TimeUnit.MINUTES);
-        // [END read_dataset]
+        GoogleSignInOptionsExtension fitnessOptions =
+                FitnessOptions.builder()
+                        .addDataType(DataType.TYPE_SLEEP_SEGMENT, FitnessOptions.ACCESS_READ)
+                        .build();
+        final  GoogleSignInAccount gsa = GoogleSignIn.getAccountForExtension(this.mReactContext, fitnessOptions);
 
+        Fitness.getSessionsClient(this.mReactContext, gsa)
+                .readSession(request)
+                .addOnSuccessListener(new OnSuccessListener<SessionReadResponse>() {
+                    @Override
+                    public void onSuccess(SessionReadResponse response) {
+                        List<Session> sleepSessions = response.getSessions()
+                            .stream()
+                            .filter(s -> s.getActivity().equals(FitnessActivities.SLEEP))
+                            .collect(Collectors.toList());
 
-        WritableArray sleeps = Arguments.createArray();
+                        WritableArray sleepSample = Arguments.createArray();
+                        Format formatter = new SimpleDateFormat("EEE");
 
-        if (dataReadResult.getBuckets().size() > 0) {
-            for (Bucket bucket : dataReadResult.getBuckets()) {
-                List<DataSet> dataSets = bucket.getDataSets();
-                for (DataSet dataSet : dataSets) {
-                    processDataSet(dataSet, sleeps);
-                }
-            }
-        } else if (dataReadResult.getDataSets().size() > 0) {
-            for (DataSet dataSet : dataReadResult.getDataSets()) {
-                processDataSet(dataSet, sleeps);
-            }
-        }
+                        for (Session session : sleepSessions) {
+                            WritableMap sleepData = Arguments.createMap();
 
-        WritableMap map = Arguments.createMap();
-        map.putArray("sleeps", sleeps);
-        results.pushMap(map);
+                            String day = formatter.format(new Date(session.getStartTime(TimeUnit.MILLISECONDS)));
+                            sleepData.putString("day", day);
 
-        successCallback.invoke(results);
+                            sleepData.putString("addedBy", session.getAppPackageName());
+                            sleepData.putString("startDate", dateFormat.format(session.getStartTime(TimeUnit.MILLISECONDS)));
+                            sleepData.putString("endDate", dateFormat.format(session.getEndTime(TimeUnit.MILLISECONDS)));
+
+                            // If the sleep session has finer granularity sub-components, extract them:
+                            List<DataSet> dataSets = response.getDataSet(session);
+                            WritableArray granularity = Arguments.createArray();
+                            for (DataSet dataSet : dataSets) {
+                                processDataSet(dataSet, granularity);
+                            }
+                            sleepData.putArray("granularity", granularity);
+
+                            sleepSample.pushMap(sleepData);
+                        }
+                        successCallback.invoke(sleepSample);
+                    }
+                });
+                // .addOnFailureListener(new OnFailureListener() {
+                //     @Override
+                //     public void onFailure(@NonNull Exception e) {
+                //         promise.reject(e);
+                //     }
+                // });
     }
 
-
-    private static void processDataSet(DataSet dataSet, WritableArray map) {
-        //Log.i(TAG, "Data returned for Data type: " + dataSet.getDataType().getName());
-        DateFormat dateFormat = getTimeInstance();
-        DateFormat dateAndTimeFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-        float sleepHours = 0;
-        WritableMap sleepMap = Arguments.createMap();
+    private void processDataSet(DataSet dataSet, WritableArray granularity) {
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+        dateFormat.setTimeZone(TimeZone.getDefault());
+        
 
         for (DataPoint dp : dataSet.getDataPoints()) {
-            Format formatter = new SimpleDateFormat("EEE");
-            String day = formatter.format(new Date(dp.getStartTime(TimeUnit.MILLISECONDS)));
+            WritableMap sleepStage = Arguments.createMap();
+            sleepStage.putInt("sleepStage", dp.getValue(Field.FIELD_SLEEP_SEGMENT_TYPE).asInt());
+            sleepStage.putString("startDate", dateFormat.format(dp.getStartTime(TimeUnit.MILLISECONDS)));
+            sleepStage.putString("endDate", dateFormat.format(dp.getEndTime(TimeUnit.MILLISECONDS)));
 
-            for(Field field : dp.getDataType().getFields()) {
-                if(dp.getOriginalDataSource().getAppPackageName() != null && dp.getOriginalDataSource().getAppPackageName().toString().contains("sleep") && field.getName().contains("duration")){
-                    
-                    Value value = dp.getValue(field);
-                    sleepHours  = (float) (Math.round((value.asInt() * 2.778 * 0.0000001*10.0))/10.0);
-                    
-                    sleepMap.putString("day", day);
-                    sleepMap.putDouble("startDate", dp.getStartTime(TimeUnit.MILLISECONDS));
-                    sleepMap.putDouble("endDate", dp.getEndTime(TimeUnit.MILLISECONDS));
-                    sleepMap.putDouble("sleep", sleepHours);
-                    map.pushMap(sleepMap);
-                }
-            }
+            granularity.pushMap(sleepStage);
         }
     }
+
+
+    // private static void processDataSet(DataSet dataSet, WritableArray map) {
+    //     //Log.i(TAG, "Data returned for Data type: " + dataSet.getDataType().getName());
+    //     DateFormat dateFormat = getTimeInstance();
+    //     DateFormat dateAndTimeFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+    //     float sleepHours = 0;
+    //     WritableMap sleepMap = Arguments.createMap();
+
+    //     for (DataPoint dp : dataSet.getDataPoints()) {
+    //         Format formatter = new SimpleDateFormat("EEE");
+    //         String day = formatter.format(new Date(dp.getStartTime(TimeUnit.MILLISECONDS)));
+
+    //         for(Field field : dp.getDataType().getFields()) {
+    //             if(dp.getOriginalDataSource().getAppPackageName() != null && dp.getOriginalDataSource().getAppPackageName().toString().contains("sleep") && field.getName().contains("duration")){
+                    
+    //                 Value value = dp.getValue(field);
+    //                 sleepHours  = (float) (Math.round((value.asInt() * 2.778 * 0.0000001*10.0))/10.0);
+                    
+    //                 sleepMap.putString("day", day);
+    //                 sleepMap.putDouble("startDate", dp.getStartTime(TimeUnit.MILLISECONDS));
+    //                 sleepMap.putDouble("endDate", dp.getEndTime(TimeUnit.MILLISECONDS));
+    //                 sleepMap.putDouble("sleep", sleepHours);
+    //                 map.pushMap(sleepMap);
+    //             }
+    //         }
+    //     }
+    // }
 
 }
