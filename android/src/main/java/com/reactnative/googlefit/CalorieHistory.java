@@ -58,7 +58,8 @@ public class CalorieHistory {
     public ReadableArray aggregateDataByDate(long startTime, long endTime, boolean basalCalculation) {
 
         DateFormat dateFormat = DateFormat.getDateInstance();
-    
+		Log.i(TAG, "Range Start: " + dateFormat.format(startTime));
+		Log.i(TAG, "Range End: " + dateFormat.format(endTime));
         //Check how much calories were expended in specific days.
         DataReadRequest readRequest = new DataReadRequest.Builder()
                 .aggregate(DataType.TYPE_CALORIES_EXPENDED, DataType.AGGREGATE_CALORIES_EXPENDED)
@@ -137,11 +138,12 @@ public class CalorieHistory {
 
 
         for (DataPoint dp : dataSet.getDataPoints()) {
-           
+			Log.i(TAG, "Stream ID: " + dp.getOriginalDataSource().getStreamIdentifier());
+
             String day = formatter.format(new Date(dp.getStartTime(TimeUnit.MILLISECONDS)));
-           
+
             for (Field field : dp.getDataType().getFields()) {
-           
+
                 stepMap.putString("day", day);
                 stepMap.putDouble("startDate", dp.getStartTime(TimeUnit.MILLISECONDS));
                 stepMap.putDouble("endDate", dp.getEndTime(TimeUnit.MILLISECONDS));
@@ -154,6 +156,12 @@ public class CalorieHistory {
                     }
                 }
                 stepMap.putDouble("calorie", dp.getValue(field).asFloat() - basal);
+				float manual_calories = 0;
+				if(dp.getOriginalDataSource().getStreamIdentifier().contains("user_input")){
+					manual_calories = dp.getValue(field).asFloat();
+				}
+				stepMap.putDouble("manual_calories", manual_calories);
+                Log.i(TAG, "Day: " + day + " " + dp.getStartTime(TimeUnit.MILLISECONDS) +" Calories: " + dp.getValue(field).asFloat() + " Basal: " + basal);
                 map.pushMap(stepMap);
             }
         }
